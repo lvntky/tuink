@@ -31,6 +31,9 @@ extern "C" {
 // =============================================================================
 #include <termios.h>
 #include <stdio.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+    #include <string.h>
 
 // =============================================================================
 //                                  MACROS
@@ -50,6 +53,30 @@ static inline char *tuink_current_version()
 		 MINOR_VERSION, PATCH_VERSION);
 	return version;
 }
+static inline void enable_raw_mode() {
+    struct termios term;
+    tcgetattr(STDIN_FILENO, &term);
+    term.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &term);
+}
+    static inline void move_cursor(int x, int y) {
+        printf("\033[%d;%dH", y, x);
+        printf(" ");  // Cursor represented by 'X'
+        fflush(stdout);
+    }
+
+    static inline void draw_cursor(int x, int y) {
+        move_cursor(x, y);
+        printf(".");
+        fflush(stdout);
+    }
+
+    // Function to clear the cursor at (x, y)
+    static inline void clear_cursor(int x, int y) {
+        move_cursor(x, y);
+        printf(" ");
+        fflush(stdout);
+    }
 
 // -----------------------------------------------------------------------------
 //                                  Structures
@@ -73,9 +100,32 @@ void tuink_cleanup();
 // -----------------------------------------------------------------------------
 
 #ifdef TUINK_IMPLEMENTATION
+    void draw_button(int x, int y, int width, int height, const char *label) {
+        move_cursor(x, y);
+        printf("┏");
+        for (int i = 0; i < width - 2; i++) printf("━");
+        printf("┓");
+
+        for (int i = 0; i < height - 2; i++) {
+            move_cursor(x, y + i + 1);
+            printf("┃");
+            move_cursor(x + width - 1, y + i + 1);
+            printf("┃");
+        }
+
+        move_cursor(x, y + height - 1);
+        printf("┗");
+        for (int i = 0; i < width - 2; i++) printf("━");
+        printf("┛");
+
+        move_cursor(x + (width - strlen(label)) / 2, y + height / 2);
+        printf("%s", label);
+        fflush(stdout);
+    }
 void tuink_init()
 {
-	printf("%s\n", tuink_current_version());
+	enable_raw_mode();
+        draw_button(10, 10, 20, 20, "TUINK v0.1.0");
 }
 #endif // TUINK_IMPLEMENTATION
 

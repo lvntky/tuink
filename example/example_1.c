@@ -3,6 +3,8 @@
 
 int main()
 {
-	tuink_init();
+    while(1) {
+	    tuink_init();
+    }
 	return 0;
 }
